@@ -1,50 +1,76 @@
-const getCache = (date, isins) => {
-  const cache = localStorage.getItem(date);
-  let cacheIsValid = !!cache;
+(async function () {
+  // эмулирую localStorage на случай если код запускаем не в браузере и не имеем window
+  const storage = typeof window !== "undefined" ? localStorage : {};
 
-  if (cache) {
-    isins.forEach((isin) => {
-      cacheIsValid = cache.hasOwnProperty(isin);
+  if (typeof window === "undefined") {
+    Object.defineProperty(storage, "getItem", {
+      value: function (key) {
+        return this[key];
+      },
+      enumerable: false,
+    });
+
+    Object.defineProperty(storage, "setItem", {
+      value: function (key, value) {
+        this[key] = value;
+      },
+      enumerable: false,
     });
   }
 
-  return cacheIsValid && cache;
-};
+  const getCache = (date, isins) => {
+    const cache = storage.getItem(date);
 
-const getBondsData = async ({ date, isins }) => {
-  const cache = getCache(date, isins);
-  if (cache) return cache;
+    if (cache) {
+      let cacheIsValid = !!cache;
+      const parsedCache = JSON.parse(cache);
+      isins.forEach((isin) => {
+        cacheIsValid = parsedCache.some((item) => item["isin"] === isin);
+      });
 
-  const result = await http.post({
-    url: `/bonds/${date}`,
-    body: isins,
+      return cacheIsValid && parsedCache;
+    }
+
+    return false;
+  };
+
+  const getBondsData = async ({ date, isins }) => {
+    const cache = getCache(date, isins);
+    if (cache) return cache;
+
+    // запрос на тестовый API
+    const url = "https://my-json-server.typicode.com/trumanpvt/sov_test1-2";
+
+    const response = await fetch(`${url}/${date}?isins=${isins}`);
+
+    const data = await response.json();
+
+    storage.setItem(date, JSON.stringify(data));
+
+    return data;
+  };
+
+  // кэш пуст, будет запрос на API
+  const test = await getBondsData({
+    date: "20231129",
+    isins: ["SU26244RMFS2", "RU000A1059P4"],
   });
 
-  return result.json();
-};
-// Пример вызова функции:
-const test = getBondsData({
-  date: "20231129",
-  isins: ["SU26244RMFS2", "RU000A1059P4"],
-});
-// Результат:
-// const result = [
-//   {
-//     isin: "SU26244RMFS2",
-//     data: {
-//       yield: 11.84,
-//       coupon: 47.47,
-//       maturity_date: "15.03.2034",
-//       coupon_payment_date: "27.03.2024",
-//     },
-//   },
-//   {
-//     isin: "RU000A1059P4",
-//     data: {
-//       yield: 4.78,
-//       coupon: 14,
-//       maturity_date: "26.04.2027",
-//       coupon_payment_date: "26.04.2024",
-//     },
-//   },
-// ];
+  console.log("test data from server", test);
+
+  // в кэше нужные данные, запроса не будет
+  const testFromCache = await getBondsData({
+    date: "20231129",
+    isins: ["SU26244RMFS2", "RU000A1059P4"],
+  });
+
+  console.log("test data from cache, ", testFromCache);
+
+  // в кэше не хватает данных, новый запрос
+  const testFromServer = await getBondsData({
+    date: "20231129",
+    isins: ["SU26244RMFS2", "RU000A1059P4", "newIsin"],
+  });
+
+  console.log("new test data from server, ", testFromServer);
+})();
