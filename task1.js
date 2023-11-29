@@ -1,13 +1,14 @@
 const getRandomArray = (length) => {
-  // да, это генератор массива любых, а не рациональных чисел, иначе написание задачи займет намного больше времени
+  // генератор массива
   return Array.from({ length }, () => Math.floor(Math.random() * 100));
 };
 
 const getPercentsArr = (arr) => {
-  const maxLength = 30000000;
+  const maxLength = 30000000; // по результатам замера на моем ПК
 
   if (arr.length > maxLength) {
     console.log("array is too big, result will be empty");
+
     return [];
   }
 

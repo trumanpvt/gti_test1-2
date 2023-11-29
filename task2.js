@@ -39,7 +39,7 @@
     if (cache) return cache;
 
     // запрос на тестовый API
-    const url = "https://my-json-server.typicode.com/trumanpvt/sov_test1-2";
+    const url = "https://my-json-server.typicode.com/trumanpvt/gti_test1-2";
 
     const response = await fetch(`${url}/${date}?isins=${isins}`);
 
