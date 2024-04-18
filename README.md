@@ -1,4 +1,4 @@
-# sov_test1-2
+# gti_test1-2
 
 ## Task 1
 
